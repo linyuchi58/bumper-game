@@ -7,11 +7,11 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="v2.0">
+    <meta name="app-version" content="v2.1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
-    <title>高速碰碰車 v2.0</title>
+    <title>高速碰碰車 v2.1</title>
     <style>
         /* 🌟 1. 基礎防護：嚴格鎖定 100% 容器與防 iPad 長按選單 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -643,6 +643,7 @@
                     </summary>
                     <div class="adv-toolbar">
                         <button id="home-zhuyin-btn" class="zy-toggle" onclick="toggleZhuyinMode()">ㄅㄆㄇ 注音：關閉</button>
+                        <button id="home-lively-btn" class="zy-toggle on" onclick="toggleLivelySfx()">🎉 熱鬧音效：開啟 ✅</button>
                         <span id="zy-engine-status" class="zy-engine-status loading">注音引擎：載入中…</span>
                     </div>
                     <div class="adv-note">💡 打完挑戰代碼會自動帶入老師的預設值。這裡的調整只用在這次上課，<b>不會改到雲端題庫</b>；要永久修改請到「⚙️ 教師管理」。</div>
@@ -679,7 +680,7 @@
                     <button class="btn-secondary" onclick="openTeacherLoginModal()" style="background: #7f8c8d; box-shadow: 0 3px 0 #576574;">⚙️ 教師管理 / 雲端出題</button>
                 </div>
                 <div style="font-size: 12px; color: #666; font-weight: bold;">💡 支援電腦鍵盤（方向鍵 / 空白鍵飛彈）、方向按鈕，或直接用手指在馬路上滑動開車！</div>
-                <div class="app-version" title="v2.0：注音、輪流接力、進階設定、代碼自動載入、答案小卡編輯器、結束遊戲按鈕、放大畫面可捲動">🏎️ 高速碰碰車 v2.0</div>
+                <div class="app-version" title="v2.1：熱鬧音效（含背景音樂）&#10;v2.0：注音、輪流接力、進階設定、代碼自動載入、答案小卡編輯器、結束遊戲按鈕、放大畫面可捲動">🏎️ 高速碰碰車 v2.1</div>
             </div>
         </div>
 
@@ -899,6 +900,7 @@
                         <label>⚡ 速度(1-10): <input type="number" id="set-speed" value="5" style="width:55px;"></label>
                         <label>🚀 初始氮氣: <input type="number" id="set-nitro" value="1" style="width:55px;"></label>
                         <label><input type="checkbox" id="set-pause"> 允許暫停 (預設關閉)</label>
+                        <label title="街機風效果音＋背景節奏音樂；關掉就是原本的柔和音效"><input type="checkbox" id="set-lively" checked> 🎉 熱鬧音效（含背景音樂）</label>
                         <label><input type="checkbox" id="set-voice" checked> 🔊 語音播報（只念題目）</label>
                     </div>
                     <div class="filter-bar code-defaults-bar">
@@ -982,6 +984,7 @@
                 </div>
                 <div class="hud-right">
                     <div class="nitro-indicator" id="nitro-badge" title="累積答對5題獲得1顆氮氣飛彈">🚀 <span id="nitro-count">0</span>/5</div>
+                    <button id="bgm-toggle-btn" class="icon-circle-btn" onclick="toggleBgmMute()" title="背景音樂靜音（老師要講話時）">🎵</button>
                     <button id="voice-toggle-btn" class="icon-circle-btn" onclick="toggleVoiceInGame()" title="切換語音播報">🔊</button>
                     <button id="end-game-btn" class="end-game-btn" onclick="onEndGameBtn(this)" title="結束這一局，回到一開始的設定畫面（1 秒內再按一次確認）">🏠 結束遊戲，回主畫面</button>
                 </div>
@@ -1105,7 +1108,7 @@
                 code: document.getElementById('login-code').value.trim() || "00000",
                 seat: document.getElementById('login-seat').value.trim() || "",
                 name: document.getElementById('login-name').value.trim() || "",
-                playStyle: playStyle, enableZhuyin: enableZhuyin,
+                playStyle: playStyle, enableZhuyin: enableZhuyin, livelySfx: livelySfx,
                 sliders: ['slider-time', 'slider-speed', 'slider-hits', 'slider-groups'].map(id => document.getElementById(id).value),
                 quickTaskPicks: quickTaskPicks, quickTaskPicksCode: quickTaskPicksCode,
                 isStandaloneTab: true
@@ -1179,6 +1182,7 @@
                 const TS = window.__TRANSFERRED_STATE__;
                 if (Array.isArray(TS.sliders)) ['slider-time', 'slider-speed', 'slider-hits', 'slider-groups'].forEach((id, k) => { if (TS.sliders[k]) setHomeSlider(id, TS.sliders[k]); });
                 if (typeof TS.enableZhuyin === 'boolean') enableZhuyin = TS.enableZhuyin;
+                if (typeof TS.livelySfx === 'boolean') livelySfx = TS.livelySfx;
                 if (Array.isArray(TS.quickTaskPicks)) { quickTaskPicks = TS.quickTaskPicks; quickTaskPicksCode = TS.quickTaskPicksCode || ''; }
                 if (TS.playStyle) playStyle = TS.playStyle;
             }
@@ -1756,6 +1760,7 @@
             document.getElementById('set-nitro').value = params.nitroInit;
             document.getElementById('set-pause').checked = !!params.allowPause;
             document.getElementById('set-voice').checked = params.enableVoice !== false;
+            document.getElementById('set-lively').checked = params.lively !== false;
             document.getElementById('set-default-mode').value = ['solo', 'relay'].includes(params.defaultMode) ? params.defaultMode : '';
             document.getElementById('set-relay-groups').value = String(Math.max(2, Math.min(40, parseInt(params.relayGroups) || 5)));
             document.getElementById('set-hits-per-task').value = String(Math.max(1, Math.min(10, parseInt(params.hitsPerTask) || 2)));
@@ -2009,6 +2014,7 @@
             params.nitroInit = parseInt(document.getElementById('set-nitro').value) || 0;
             params.allowPause = document.getElementById('set-pause').checked;
             params.enableVoice = document.getElementById('set-voice').checked;
+            params.lively = document.getElementById('set-lively').checked;
             params.defaultMode = document.getElementById('set-default-mode').value || '';
             params.relayGroups = Math.max(2, Math.min(40, parseInt(document.getElementById('set-relay-groups').value) || 5));
             params.hitsPerTask = parseInt(document.getElementById('set-hits-per-task').value) || 2;
@@ -2577,10 +2583,127 @@
             src.start(t0); src.stop(t0 + dur + 0.02);
         }
 
+        // =====================================================================
+        // 🎉 v3.3 熱鬧音效：街機風效果音＋背景節奏音樂（全部即時合成，不用載入音樂檔）
+        // =====================================================================
+        let livelySfx = true;        // 熱鬧音效（預設開啟；代碼可存老師預設）
+        let bgmMuted = false;        // 遊戲中 🎵 一鍵靜音背景音樂（只影響這一場）
+        function toggleLivelySfx() {
+            livelySfx = !livelySfx;
+            updateLivelyButtonsUI();
+            showToast(livelySfx ? '🎉 已開啟熱鬧音效（含背景音樂）' : '🔔 已切換為柔和音效');
+            try { onQuickSliderChange(); } catch (e) {}
+        }
+        function updateLivelyButtonsUI() {
+            const b = document.getElementById('home-lively-btn');
+            if (b) { b.innerText = livelySfx ? '🎉 熱鬧音效：開啟 ✅' : '🔔 熱鬧音效：關閉（柔和）'; b.classList.toggle('on', livelySfx); }
+            const m = document.getElementById('bgm-toggle-btn');
+            if (m) { m.style.display = livelySfx ? '' : 'none'; m.innerText = bgmMuted ? '🔇' : '🎵'; m.title = bgmMuted ? '打開背景音樂' : '背景音樂靜音（老師要講話時）'; }
+        }
+        function toggleBgmMute() { bgmMuted = !bgmMuted; updateLivelyButtonsUI(); showToast(bgmMuted ? '🔇 背景音樂已靜音' : '🎵 背景音樂已打開'); refocusGame(); }
+
+        // ---------- 街機風效果音 ----------
+        function lvSquare(dest, f, t0, dur, gain, to) { sfxTone(dest, f, t0, dur, { type: 'square', gain, to }); }
+        function lvClap(dest, t0, gain) {
+            for (let k = 0; k < 3; k++) sfxNoise(dest, t0 + k * 0.012, 0.09, 1200, 2400, gain);
+        }
+        function lvKick(dest, t0, gain) { sfxTone(dest, 150, t0, 0.14, { to: 45, gain }); }
+        function playLivelySound(type, dest, now, level) {
+            const C5 = 523.25;
+            switch (type) {
+                case 'hit': {   // 吃金幣「叮鈴！」，連擊音階往上爬
+                    const step = Math.pow(2, Math.min(level, 12) / 12);
+                    lvSquare(dest, 987.77 * step, now, 0.07, 0.10);
+                    lvSquare(dest, 1318.5 * step, now + 0.07, 0.20, 0.10);
+                    sfxBell(dest, 1975.5 * step, now + 0.07, 0.25, 0.10);
+                    sfxNoise(dest, now, 0.10, 3000, 6000, 0.08);
+                    return true;
+                }
+                case 'wrong':   // 短促明顯的「嗶嗶」
+                    lvSquare(dest, 196, now, 0.11, 0.16);
+                    lvSquare(dest, 185, now + 0.14, 0.16, 0.16);
+                    sfxTone(dest, 98, now, 0.30, { type: 'sawtooth', gain: 0.07 });
+                    return true;
+                case 'combo':   // 小號角＋拍手
+                    [C5, C5 * 1.25, C5 * 1.5, C5 * 2].forEach((f, i) => {
+                        sfxTone(dest, f, now + i * 0.08, i === 3 ? 0.42 : 0.12, { type: 'sawtooth', gain: 0.07 });
+                        lvSquare(dest, f, now + i * 0.08, i === 3 ? 0.42 : 0.12, 0.05);
+                    });
+                    for (let k = 0; k < 6; k++) lvClap(dest, now + 0.3 + k * 0.09 + Math.random() * 0.02, 0.14);
+                    return true;
+                case 'count':   // 鼓聲「咚」
+                    lvKick(dest, now, 0.55);
+                    sfxNoise(dest, now, 0.12, 200, 800, 0.12);
+                    return true;
+                case 'go':      // GO！上揚號角
+                    lvKick(dest, now, 0.5);
+                    [C5, C5 * 1.25, C5 * 1.5, C5 * 2].forEach((f, i) => sfxTone(dest, f, now + i * 0.06, i === 3 ? 0.6 : 0.1, { type: 'sawtooth', gain: 0.07 }));
+                    sfxNoise(dest, now + 0.18, 0.5, 2000, 6000, 0.10);
+                    return true;
+                case 'tick':    // 最後 10 秒：小鼓
+                    sfxNoise(dest, now, 0.07, 1500, 3000, 0.16);
+                    return true;
+                case 'alarm':   // 最後 5 秒：急促雙響
+                    lvSquare(dest, 1046.5, now, 0.08, 0.10);
+                    lvSquare(dest, 1046.5, now + 0.12, 0.08, 0.10);
+                    return true;
+                case 'timeup':  // 哨音
+                    sfxTone(dest, 2100, now, 0.18, { gain: 0.14 });
+                    sfxTone(dest, 2100, now + 0.22, 0.55, { to: 1900, gain: 0.14 });
+                    sfxNoise(dest, now, 0.75, 2500, 3500, 0.05);
+                    return true;
+                case 'finish':  // 勝利小樂曲
+                    [[C5, 0], [C5 * 1.25, 0.12], [C5 * 1.5, 0.24], [C5 * 2, 0.36], [C5 * 1.5, 0.6], [C5 * 2, 0.72]].forEach(([f, t], i) => {
+                        sfxTone(dest, f, now + t, i >= 3 ? 0.4 : 0.11, { type: 'sawtooth', gain: 0.07 });
+                        lvSquare(dest, f / 2, now + t, i >= 3 ? 0.4 : 0.11, 0.05);
+                    });
+                    for (let k = 0; k < 8; k++) lvClap(dest, now + 0.5 + k * 0.08 + Math.random() * 0.02, 0.12);
+                    return true;
+            }
+            return false;
+        }
+
+        // ---------- 背景節奏音樂（C–Am–F–G 循環；最後 10 秒加快） ----------
+        let bgmTimer = null, bgmNextTime = 0, bgmStep = 0, bgmGain = null;
+        const BGM_CHORDS = [[130.81, 261.63, 329.63, 392.0], [110.0, 220.0, 261.63, 329.63], [87.31, 174.61, 220.0, 261.63], [98.0, 196.0, 246.94, 293.66]];
+        function bgmShouldPlay() {
+            if (!audioCtx || !livelySfx || bgmMuted || isPaused || endBanner) return false;
+            const gs = document.getElementById('game-screen');
+            if (!gs || !gs.classList.contains('active')) return false;
+            const ho = document.getElementById('handover-screen');
+            if (ho && ho.style.display && ho.style.display !== 'none') return false;
+            return Date.now() >= introEndAt - 200;
+        }
+        function bgmIsUrgent() { return timeLeft <= 10 && timeLeft > 0; }
+        function startBgm() {
+            if (!audioCtx || bgmTimer) return;
+            if (!bgmGain) { bgmGain = audioCtx.createGain(); bgmGain.gain.value = 0.55; bgmGain.connect(masterCompressor || audioCtx.destination); }
+            bgmNextTime = audioCtx.currentTime + 0.1; bgmStep = 0;
+            bgmTimer = setInterval(bgmSchedule, 60);
+        }
+        function bgmSchedule() {
+            if (!audioCtx) return;
+            if (!bgmShouldPlay()) { bgmNextTime = audioCtx.currentTime + 0.1; return; }
+            const urgent = bgmIsUrgent();
+            const sixteenth = 60 / (urgent ? 152 : 124) / 4;
+            while (bgmNextTime < audioCtx.currentTime + 0.18) {
+                const t = bgmNextTime, s = bgmStep % 16, bar = Math.floor(bgmStep / 16) % 4;
+                const ch = BGM_CHORDS[bar];
+                if (s % 4 === 0) lvKick(bgmGain, t, 0.30);                                     // 大鼓：每拍
+                if (s % 4 === 2) sfxNoise(bgmGain, t, 0.04, 6000, 9000, 0.06);                  // 開鈸：反拍
+                if (s === 4 || s === 12) for (let k = 0; k < 2; k++) sfxNoise(bgmGain, t + k * 0.01, 0.09, 1300, 2300, 0.08);   // 拍手
+                if (urgent && s % 2 === 1) sfxNoise(bgmGain, t, 0.03, 7000, 9000, 0.04);        // 緊張時加密小鈸
+                if (s % 2 === 0) sfxTone(bgmGain, ch[0] * (s % 8 === 6 ? 2 : 1), t, sixteenth * 1.6, { type: 'triangle', gain: 0.13 });   // 低音
+                if (s % 2 === 1 || urgent) sfxTone(bgmGain, ch[1 + (s % 3)] * 2, t, sixteenth * 0.8, { type: 'square', gain: 0.022 });     // 琶音
+                bgmNextTime += sixteenth; bgmStep++;
+            }
+        }
+
         function playZoneSound(type, teamIndex = 0, level = 0) {
             if (!audioCtx) return;
             const now = audioCtx.currentTime + 0.005;
             const dest = sfxDest(teamIndex);
+            if (livelySfx && playLivelySound(type, dest, now, level)) return;   // 🎉 熱鬧音效
             const C5 = 523.25;
             switch (type) {
                 case 'pop':     // 拿起卡片
@@ -2954,7 +3077,7 @@
             const gw = g('slider-wrap-groups'); if (gw) gw.classList.toggle('dimmed', playStyle !== 'relay');
             const tasks = typeof homeTaskList === 'function' ? homeTaskList() : null;
             const pickTxt = tasks && tasks.length ? taskPicksLabel(normalizeTaskPicks(quickTaskPicks, tasks.length), tasks.length) : '全部題目';
-            g('quick-summary-tag').innerText = `${playStyle === 'relay' ? `🏁 輪流 ${relayTotal} 位` : '🧑‍💻 各自練習'} · ⏱️${quickDurationSec}秒 · 速度${quickSpeed} · 🔁撞中${quickHits}輛換題 · 📋${pickTxt} · ${enableZhuyin ? '注音開' : '注音關'}`;
+            g('quick-summary-tag').innerText = `${playStyle === 'relay' ? `🏁 輪流 ${relayTotal} 位` : '🧑‍💻 各自練習'} · ⏱️${quickDurationSec}秒 · 速度${quickSpeed} · 🔁撞中${quickHits}輛換題 · 📋${pickTxt} · ${enableZhuyin ? '注音開' : '注音關'} · ${livelySfx ? '🎉熱鬧' : '🔔柔和'}`;
             updateHomeNameFields();
         }
         function updateHomeNameFields() {
@@ -3112,6 +3235,8 @@
             setIf('slider-hits', Math.max(1, Math.min(10, parseInt(cfg.hitsPerTask) || 2)), 'slider-wrap-hits');
             const zy = cfg.enableZhuyin === true;
             if (zy !== enableZhuyin) { enableZhuyin = zy; updateZhuyinButtonsUI(); changed.push(document.getElementById('home-zhuyin-btn')); }
+            const lv = cfg.lively !== false;   // 舊代碼沒有這個設定 → 開啟
+            if (lv !== livelySfx) { livelySfx = lv; updateLivelyButtonsUI(); changed.push(document.getElementById('home-lively-btn')); }
             const nT = (cfg.tasks || []).length;
             quickTaskPicks = Array.isArray(cfg.taskPicks) && normalizeTaskPicks(cfg.taskPicks, nT).length < nT ? normalizeTaskPicks(cfg.taskPicks, nT) : null;
             quickTaskPicksCode = String((document.getElementById('login-code') || {}).value || '').trim();
@@ -3135,7 +3260,7 @@
             const c = homeRoomCache.params, n = (c.tasks || []).length;
             const mode = c.defaultMode === 'relay' ? `🏁 輪流接力${parseInt(c.relayGroups) > 1 ? ' ' + c.relayGroups + ' 位' : ''}` : (c.defaultMode === 'solo' ? '🧑‍💻 各自練習' : '依首頁選擇');
             box.innerHTML = `<div class="cs-line1">✅ ${homeRoomCache.isDefault ? '自學示範題庫' : `代碼 <b>${code}</b> 已載入`}：「${escapeHtml(stripZhuyinAnnotation(c.title || '自訂挑戰'))}」共 ${n} 題</div>
-                <div class="cs-line2">老師預設：${mode} · ⏱️${c.time || 90}秒 · 速度${c.speed || 5} · 🔁撞中${Math.max(1, parseInt(c.hitsPerTask) || 2)}輛換題 · ${c.enableZhuyin === true ? '注音開' : '注音關'} · 📋 出${taskPicksLabel(normalizeTaskPicks(c.taskPicks, n), n)}</div>`;
+                <div class="cs-line2">老師預設：${mode} · ⏱️${c.time || 90}秒 · 速度${c.speed || 5} · 🔁撞中${Math.max(1, parseInt(c.hitsPerTask) || 2)}輛換題 · ${c.enableZhuyin === true ? '注音開' : '注音關'} · ${c.lively !== false ? '🎉熱鬧音效' : '🔔柔和音效'} · 📋 出${taskPicksLabel(normalizeTaskPicks(c.taskPicks, n), n)}</div>`;
         }
 
         // ---------- ㄅㄆㄇ 注音開關 ----------
@@ -3955,7 +4080,7 @@
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         let VW = 300, VH = 150, canvasDpr = 1;
-        const APP_VERSION = 'v2.0';
+        const APP_VERSION = 'v2.1';
         let timerId, animId;
         let isPaused = false;
         let timeLeft = 90;
@@ -4152,7 +4277,8 @@
         }
 
         function initGame() {
-            clearInterval(timerId); cancelAnimationFrame(animId); resizeCanvas();
+            clearInterval(timerId); cancelAnimationFrame(animId);
+            try { initAudio(); startBgm(); } catch (e) {} resizeCanvas();
             isPaused = false; timeLeft = params.time; timeUsed = 0; score = 0; correctCount = 0; wrongCount = 0;
             combo = 0; maxCombo = 0; currentVehicleIdx = 0; player.emoji = vehicleTiers[0].emoji;
             nitroCount = params.nitroInit !== undefined ? Number(params.nitroInit) : 1;
@@ -4745,6 +4871,7 @@
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            updateLivelyButtonsUI();
             if (id === 'game-screen') {
                 resizeCanvas();
                 setTimeout(resizeCanvas, 120);
